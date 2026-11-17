@@ -9,6 +9,9 @@ FOR LOGIN NandaSurendra;
 ALTER ROLE db_owner ADD MEMBER NandaSurendra;
 */
 
+-- Remove all foreign key constraints
+
+
 
 if object_id('TeamCoach', 'U') is not null drop table TeamCoach;
 if object_id('Coach', 'U') is not null drop table Coach;
@@ -27,41 +30,52 @@ if object_id('Player', 'U') is not null drop table Player;
 if object_id('Roster', 'U') is not null drop table Roster;
 if object_id('AppUser', 'U') is not null drop table AppUser;
 if object_id('Game', 'U') is not null drop table Game;
-if object_id('Stadium', 'U') is not null drop table Stadium;
 if object_id('Team', 'U') is not null drop table Team;
+if object_id('Stadium', 'U') is not null drop table Stadium;
 if object_id('Conference', 'U') is not null drop table Conference;
+
 go
 create table Conference(
     ConferenceId int identity(1,1) not null,
     ConferenceName char(50) not null,
     CONSTRAINT UQ_ConferenceName unique (ConferenceName),
     constraint PK_Conference primary key (ConferenceId),
-)
-go
-create table Team(
-    TeamId int identity(1,1) not null,
-    TeamName char(50) not null,
-    ConferenceId int not null,
-    UniversityName varchar(50) not null,
-    CurrentTeamRecord varchar(10) null,
-    foreign key (ConferenceId) references Conference(ConferenceId),
-    CONSTRAINT UQ_TeamName unique (TeamName),
-    constraint PK_Team primary key (TeamId),
 );
 go
-create table Stadium(
-    StadiumId int identity(1,1) not null,
-    StadiumName char(50) not null,
-    StadiumAddress varchar(50) not null,
-    StadiumCapacity int not null,
-    StadiumGrassType char(20) not null,
-    TeamId int not null,
-    foreign key (TeamId) references Team(TeamId),
-    CONSTRAINT UQ_StadiumName unique (StadiumName),
-    constraint PK_Stadium primary key (StadiumId),
-    constraint CK_TypeOfGrass check (StadiumGrassType in ('Artificial Turf', 'Grass'))
+
+CREATE TABLE Stadium (
+    StadiumId INT IDENTITY(1,1) NOT NULL,
+    StadiumName VARCHAR(50) NOT NULL,
+    StadiumCity VARCHAR(50) NOT NULL,
+    StadiumState VARCHAR(2) NOT NULL,
+    StadiumCapacity INT NOT NULL,
+    TypeOfField VARCHAR(20) NOT NULL,
+
+    CONSTRAINT PK_Stadium PRIMARY KEY (StadiumId),
+    CONSTRAINT CK_TypeOfField
+        CHECK (TypeOfField IN ('Artificial Turf', 'Grass'))
 );
-go
+GO
+CREATE TABLE Team (
+    TeamId INT IDENTITY(1,1) NOT NULL,
+    TeamName VARCHAR(50) NOT NULL,
+    ConferenceId INT NOT NULL,
+    UniversityName VARCHAR(50) NOT NULL,
+    CurrentTeamRecord VARCHAR(10) NULL,
+    StadiumId INT NOT NULL,
+
+    CONSTRAINT PK_Team PRIMARY KEY (TeamId),
+
+    CONSTRAINT FK_Team_Conference
+        FOREIGN KEY (ConferenceId)
+        REFERENCES Conference(ConferenceId),
+
+    CONSTRAINT FK_Team_Stadium
+        FOREIGN KEY (StadiumId)
+        REFERENCES Stadium(StadiumId),
+    CONSTRAINT UQ_UniversityName UNIQUE (UniversityName)
+);
+GO
 create table Game(
     GameId int identity(1,1) not null,
     GameDate date not null,
@@ -118,10 +132,10 @@ create table PlayerStats(
 go
 create table QBStats(
     QBStatsId int not null,
-    PassingAttempts int not null,
-    PassingCompletions int not null,
-    PassingYards int not null,
-    PassingTouchdowns int not null,
+    PassingAttempts int not null default 0,
+    PassingCompletions int not null default 0,
+    PassingYards int not null default 0,
+    PassingTouchdowns int not null default 0,
     Interceptions int not null,
     constraint PK_QBStats primary key (QBStatsId),
     constraint FK_QBStats_PlayerStats foreign key (QBStatsId) references PlayerStats(PlayerStatsId),
